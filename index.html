@@ -325,51 +325,56 @@
     let highPassFilter;
     let gainNode;
     let isPlaying = false;
+    let workletLoaded = false;
 
     // This function creates the white noise generator
-    function createWhiteNoise(audioContext) {
-        // Create a buffer for the white noise
-        const bufferSize = audioContext.sampleRate * 2; // 2 seconds of noise
-        const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-        const output = noiseBuffer.getChannelData(0);
-
-        // Fill the buffer with random values between -1 and 1
-        for (let i = 0; i < bufferSize; i++) {
-            output[i] = Math.random() * 2 - 1;
+    async function createWhiteNoise(audioContext) {
+        if (!workletLoaded) {
+            const processorCode = `
+                class WhiteNoiseProcessor extends AudioWorkletProcessor {
+                    process(inputs, outputs, parameters) {
+                        const output = outputs[0];
+                        for (let channel = 0; channel < output.length; ++channel) {
+                            const outputChannel = output[channel];
+                            for (let i = 0; i < outputChannel.length; ++i) {
+                                outputChannel[i] = Math.random() * 2 - 1;
+                            }
+                        }
+                        return true;
+                    }
+                }
+                registerProcessor('white-noise-processor', WhiteNoiseProcessor);
+            `;
+            const blob = new Blob([processorCode], { type: 'application/javascript' });
+            const url = URL.createObjectURL(blob);
+            await audioContext.audioWorklet.addModule(url);
+            workletLoaded = true;
         }
-
-        // Create a BufferSourceNode to play the buffer
-        const whiteNoiseSource = audioContext.createBufferSource();
-        whiteNoiseSource.buffer = noiseBuffer;
-        whiteNoiseSource.loop = true; // Loop the noise
-        return whiteNoiseSource;
+        return new AudioWorkletNode(audioContext, 'white-noise-processor');
     }
 
     // Function to start the audio playback
-    function startPlaying() {
+    async function startPlaying() {
         // Stop any existing sound first
         stopPlaying();
 
-        // Create a new AudioContext if it doesn't exist or is suspended
+        // Create a new AudioContext if it doesn't exist or is closed
         if (!audioContext || audioContext.state === 'closed') {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
 
         // Handle the initial user gesture requirement
         if (audioContext.state === 'suspended') {
-            audioContext.resume().then(() => {
-                console.log('AudioContext resumed!');
-                createAndPlay();
-            });
-        } else {
-            createAndPlay();
+            await audioContext.resume();
         }
+
+        await createAndPlay();
     }
     
     // Helper function to create the nodes and start the sound
-    function createAndPlay() {
+    async function createAndPlay() {
         // Create the nodes
-        whiteNoiseNode = createWhiteNoise(audioContext);
+        whiteNoiseNode = await createWhiteNoise(audioContext);
         lowPassFilter = audioContext.createBiquadFilter();
         highPassFilter = audioContext.createBiquadFilter();
         gainNode = audioContext.createGain();
@@ -388,10 +393,7 @@
         gainNode.gain.value = volumeSlider.value;
         lowPassFilter.frequency.value = lowPassSlider.value;
         highPassFilter.frequency.value = highPassSlider.value;
-        
-        // Start the noise source
-        whiteNoiseNode.start();
-        
+
         isPlaying = true;
         playButton.classList.add('playing');
     }
