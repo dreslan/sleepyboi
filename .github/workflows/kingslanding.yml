@@ -1,0 +1,60 @@
+name: Deploy BoxShop.io Website
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write # Required for OIDC
+  contents: read  # Required to checkout the repository
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Optional: Add a step to optimize images if needed
+      # - name: Optimize images
+      #   run: |
+      #     # Commands to optimize images
+      
+      # Optional: Add a step for CSS/JS minification if needed
+      # - name: Minify assets
+      #   run: |
+      #     # Commands to minify CSS/JS files
+      
+      - name: Configure AWS credentials for S3 (Ohio)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::457320695046:role/gha-boxshopio
+          role-session-name: GitHubActionsKingsLandingS3Deployment
+          aws-region: us-east-2  # S3 bucket region
+          
+      - name: Deploy to S3
+        run: |
+          echo "Deploying to S3 bucket: ${{ vars.S3_BUCKET }} in us-east-2"
+          aws s3 sync . s3://kingslanding.io/sleepyboi \
+            --delete \
+            --exclude ".git/*" \
+            --exclude ".github/*" \
+            --exclude "README.md" \
+            --exclude ".gitignore"
+          
+      - name: Configure AWS credentials for CloudFront (N. Virginia)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::457320695046:role/gha-boxshopio
+          role-session-name: GitHubActionsKingsLandingCloudFrontInvalidation
+          aws-region: us-east-1  # CloudFront is always in us-east-1
+          
+      - name: Invalidate CloudFront Distribution
+        run: |
+          echo "Invalidating CloudFront distribution: E2MJLN1CULO5O5"
+          aws cloudfront create-invalidation \
+            --distribution-id E2MJLN1CULO5O5 \
+            --paths "/*"
