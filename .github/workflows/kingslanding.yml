@@ -37,13 +37,9 @@ jobs:
           
       - name: Deploy to S3
         run: |
-          echo "Deploying to S3 bucket: ${{ vars.S3_BUCKET }} in us-east-2"
-          aws s3 sync . s3://kingslanding.io/sleepyboi \
-            --delete \
-            --exclude ".git/*" \
-            --exclude ".github/*" \
-            --exclude "README.md" \
-            --exclude ".gitignore"
+          echo "Deploying to S3 bucket: kingslanding.io in us-east-2"
+          aws s3 sync www/ s3://kingslanding.io/sleepyboi \
+            --delete
           
       - name: Configure AWS credentials for CloudFront (N. Virginia)
         uses: aws-actions/configure-aws-credentials@v4
