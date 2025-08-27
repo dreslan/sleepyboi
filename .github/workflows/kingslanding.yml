@@ -1,4 +1,4 @@
-name: Deploy BoxShop.io Website
+name: Deploy to kingslanding.io
 
 on:
   push:
