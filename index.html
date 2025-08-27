@@ -6,6 +6,70 @@
     <title>Custom Noise Generator</title>
 
     <style>
+        /* Active preset button highlight */
+        .preset-buttons button.active {
+            border-color: #55a8f0;
+            background-color: #2266aa;
+            color: #fff;
+        }
+        body.light-mode .preset-buttons button.active {
+            border-color: #ffd966;
+            background-color: #ffe699;
+            color: #222;
+        }
+        /* Light mode styles */
+        body.light-mode {
+            background-color: #f5f5f5;
+            color: #222;
+        }
+        body.light-mode .container {
+            background-color: #fff;
+            color: #222;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+        }
+        body.light-mode .preset-buttons button {
+            background-color: #eaeaea;
+            color: #222;
+            border-color: #ccc;
+        }
+        body.light-mode .preset-buttons button:hover {
+            background-color: #d5eaff;
+        }
+        body.light-mode .play-button {
+            background-color: #ffd966;
+            color: #222;
+            box-shadow: 0 5px 15px rgba(255,217,102,0.2);
+        }
+        body.light-mode .play-button:hover {
+            background-color: #ffe699;
+        }
+        body.light-mode .slider-container label {
+            color: #555;
+        }
+        body.light-mode .technical-details {
+            background-color: #f3f3f3;
+            color: #222;
+        }
+        body.light-mode .technical-details-content p {
+            color: #444;
+        }
+        body.light-mode input[type="range"] {
+            background: #ddd;
+        }
+        body.light-mode input[type="range"]::-webkit-slider-thumb {
+            background: #ffd966;
+            border: 3px solid #fff;
+        }
+        body.light-mode input[type="range"]::-moz-range-thumb {
+            background: #ffd966;
+            border: 3px solid #fff;
+        }
+        body.light-mode .volume-container svg {
+            fill: #888;
+        }
+        body.light-mode #waveform {
+            background: #fff;
+        }
         /* General styling for the body */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -242,95 +306,99 @@
 </head>
 <body>
 
-<div class="container">
+<div class="container" id="main-container">
     <h1>Custom Noise</h1>
+
+    <!-- Dark/Light mode toggle -->
+    <button id="theme-toggle" aria-label="Toggle dark/light mode" style="margin-bottom:1rem;">🌙/☀️</button>
 
     <!-- Preset buttons -->
     <div class="preset-buttons">
-        <button id="white-preset">White</button>
-        <button id="pink-preset">Pink</button>
-        <button id="brown-preset">Brown</button>
-        <button id="violet-preset">Violet</button>
-        <button id="reset-preset">Reset</button>
+        <button id="white-preset" aria-label="White noise preset">White</button>
+        <button id="pink-preset" aria-label="Pink noise preset">Pink</button>
+        <button id="brown-preset" aria-label="Brown noise preset">Brown</button>
+        <button id="violet-preset" aria-label="Violet noise preset">Violet</button>
+        <button id="reset-preset" aria-label="Reset sliders">Reset</button>
     </div>
-    
+
     <!-- Play/Pause button with SVG icons -->
-    <button id="play-button" class="play-button">
-        <!-- Play icon -->
-        <svg class="play-icon" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z"/>
-        </svg>
-        <!-- Pause icon -->
-        <svg class="pause-icon" viewBox="0 0 24 24">
-            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-        </svg>
+    <button id="play-button" class="play-button" aria-label="Play or pause noise">
+        <svg class="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <svg class="pause-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
     </button>
-    
+
+    <!-- Waveform animation -->
+    <canvas id="waveform" width="320" height="60" style="width:100%;max-width:320px;margin-bottom:1rem;display:none;"></canvas>
+
     <!-- Low-Pass Filter Slider -->
     <div class="slider-container">
-        <!-- Title attribute provides the tooltip -->
-        <label for="low-pass-slider" title="A low-pass filter blocks high frequencies. Moving the slider down cuts more hiss, making the sound feel deeper.">High Frequencies (Hiss)</label>
-        <input type="range" id="low-pass-slider" min="100" max="20000" step="1" value="20000">
+        <label for="low-pass-slider" title="A low-pass filter blocks high frequencies. Moving the slider down cuts more hiss, making the sound feel deeper." aria-label="High Frequencies (Hiss)">High Frequencies (Hiss)
+            <span id="lowPassValue" style="float:right;font-weight:bold;">20000 Hz</span>
+        </label>
+        <input type="range" id="low-pass-slider" min="100" max="20000" step="1" value="20000" aria-valuemin="100" aria-valuemax="20000" aria-valuenow="20000" aria-label="High Frequencies slider">
     </div>
 
     <!-- High-Pass Filter Slider -->
     <div class="slider-container">
-        <!-- Title attribute provides the tooltip -->
-        <label for="high-pass-slider" title="A high-pass filter blocks low frequencies. Moving the slider up cuts more rumble, making the sound feel sharper.">Low Frequencies (Rumble)</label>
-        <input type="range" id="high-pass-slider" min="0" max="5000" step="1" value="0">
+        <label for="high-pass-slider" title="A high-pass filter blocks low frequencies. Moving the slider up cuts more rumble, making the sound feel sharper." aria-label="Low Frequencies (Rumble)">Low Frequencies (Rumble)
+            <span id="highPassValue" style="float:right;font-weight:bold;">0 Hz</span>
+        </label>
+        <input type="range" id="high-pass-slider" min="0" max="5000" step="1" value="0" aria-valuemin="0" aria-valuemax="5000" aria-valuenow="0" aria-label="Low Frequencies slider">
     </div>
 
     <!-- Volume slider -->
     <div class="volume-container">
-        <svg viewBox="0 0 24 24">
-            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.81 5 3.54 5 6.71s-2.11 5.9-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-        </svg>
-        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5">
+        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.81 5 3.54 5 6.71s-2.11 5.9-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0.5" aria-label="Volume slider">
+        <span id="volumeValue" style="margin-left:10px;font-weight:bold;">0.50</span>
     </div>
-    
+
     <!-- Technical details section -->
     <div class="technical-details">
         <div class="technical-details-header" id="details-header">
             <h2>Technical Details</h2>
-            <span class="toggle-icon">&#9660;</span> <!-- Unicode for a downward-pointing triangle -->
+            <span class="toggle-icon">&#9660;</span>
         </div>
         <div class="technical-details-content" id="details-content">
-            <p>This generator creates <strong>white noise</strong> by generating random audio samples. This sound contains all audible frequencies at equal intensity.</p>
-            <p>The <strong>High Frequencies (Hiss)</strong> slider is a <strong>Low-Pass Filter</strong>. It blocks frequencies <em>above</em> the selected value. To get brown noise, this filter is set to a low value (300 Hz).</p>
-            <p>The <strong>Low Frequencies (Rumble)</strong> slider is a <strong>High-Pass Filter</strong>. It blocks frequencies <em>below</em> the selected value. To get violet noise, this filter is set to a high value (4000 Hz).</p>
-            <p>Adjusting both filters lets you create a wide spectrum of "colored" noise, from a deep rumble to a sharp hiss, or a perfect blend of both.</p>
+            <p>This generator creates <strong>white, pink, brown, and violet noise</strong> using real-time algorithms. White noise contains all audible frequencies at equal intensity. Pink and brown noise are filtered to emphasize lower frequencies, while violet noise emphasizes higher frequencies.</p>
+            <p><strong>Presets</strong> set the filters and noise type for common noise colors. You can also customize the sliders for a unique blend.</p>
+            <p><strong>Tip:</strong> You can save your favorite settings by bookmarking the page after adjusting the sliders.</p>
         </div>
     </div>
 </div>
 
 <script>
-    // Get HTML elements
-    const playButton = document.getElementById('play-button');
-    const volumeSlider = document.getElementById('volume-slider');
-    const lowPassSlider = document.getElementById('low-pass-slider');
-    const highPassSlider = document.getElementById('high-pass-slider');
-    const whitePresetBtn = document.getElementById('white-preset');
-    const pinkPresetBtn = document.getElementById('pink-preset');
-    const brownPresetBtn = document.getElementById('brown-preset');
-    const violetPresetBtn = document.getElementById('violet-preset');
-    const resetPresetBtn = document.getElementById('reset-preset');
-
-    const detailsHeader = document.getElementById('details-header');
-    const detailsContent = document.getElementById('details-content');
+    // Group DOM elements
+    const els = {
+        play: document.getElementById('play-button'),
+        volume: document.getElementById('volume-slider'),
+        lowPass: document.getElementById('low-pass-slider'),
+        highPass: document.getElementById('high-pass-slider'),
+        presets: [
+            {btn: document.getElementById('white-preset'), type: 'white', lp: 20000, hp: 0},
+            {btn: document.getElementById('pink-preset'), type: 'pink', lp: 1000, hp: 0},
+            {btn: document.getElementById('brown-preset'), type: 'brown', lp: 300, hp: 0},
+            {btn: document.getElementById('violet-preset'), type: 'violet', lp: 20000, hp: 4000},
+        ],
+        reset: document.getElementById('reset-preset'),
+        theme: document.getElementById('theme-toggle'),
+        lowPassValue: document.getElementById('lowPassValue'),
+        highPassValue: document.getElementById('highPassValue'),
+        volumeValue: document.getElementById('volumeValue'),
+        waveform: document.getElementById('waveform'),
+        detailsHeader: document.getElementById('details-header'),
+        detailsContent: document.getElementById('details-content'),
+        main: document.getElementById('main-container')
+    };
 
     // Audio context and nodes
-    let audioContext;
-    let whiteNoiseNode;
-    let lowPassFilter;
-    let highPassFilter;
-    let gainNode;
-    let isPlaying = false;
-    let workletLoaded = false;
+    let audioContext, noiseNode, lowPassFilter, highPassFilter, gainNode;
+    let isPlaying = false, workletLoaded = false, noiseType = 'white', animationFrame;
 
-    // This function creates the white noise generator
-    async function createWhiteNoise(audioContext) {
+    // Noise generator
+    async function createNoiseNode(ctx, type) {
         if (!workletLoaded) {
-            const processorCode = `
+            const code = `
                 class WhiteNoiseProcessor extends AudioWorkletProcessor {
                     process(inputs, outputs, parameters) {
                         const output = outputs[0];
@@ -344,138 +412,215 @@
                     }
                 }
                 registerProcessor('white-noise-processor', WhiteNoiseProcessor);
+
+                class PinkNoiseProcessor extends AudioWorkletProcessor {
+                    constructor() {
+                        super();
+                        this.b0 = this.b1 = this.b2 = this.b3 = this.b4 = this.b5 = this.b6 = 0;
+                    }
+                    process(inputs, outputs, parameters) {
+                        const output = outputs[0];
+                        for (let channel = 0; channel < output.length; ++channel) {
+                            const outputChannel = output[channel];
+                            for (let i = 0; i < outputChannel.length; ++i) {
+                                let white = Math.random() * 2 - 1;
+                                this.b0 = 0.99886 * this.b0 + white * 0.0555179;
+                                this.b1 = 0.99332 * this.b1 + white * 0.0750759;
+                                this.b2 = 0.96900 * this.b2 + white * 0.1538520;
+                                this.b3 = 0.86650 * this.b3 + white * 0.3104856;
+                                this.b4 = 0.55000 * this.b4 + white * 0.5329522;
+                                this.b5 = -0.7616 * this.b5 - white * 0.0168980;
+                                outputChannel[i] = this.b0 + this.b1 + this.b2 + this.b3 + this.b4 + this.b5 + this.b6 + white * 0.5362;
+                                outputChannel[i] *= 0.11;
+                                this.b6 = white * 0.115926;
+                            }
+                        }
+                        return true;
+                    }
+                }
+                registerProcessor('pink-noise-processor', PinkNoiseProcessor);
+
+                class BrownNoiseProcessor extends AudioWorkletProcessor {
+                    constructor() {
+                        super();
+                        this.lastOut = 0;
+                    }
+                    process(inputs, outputs, parameters) {
+                        const output = outputs[0];
+                        for (let channel = 0; channel < output.length; ++channel) {
+                            const outputChannel = output[channel];
+                            for (let i = 0; i < outputChannel.length; ++i) {
+                                let white = Math.random() * 2 - 1;
+                                this.lastOut = (this.lastOut + (0.02 * white)) / 1.02;
+                                outputChannel[i] = this.lastOut * 3.5;
+                            }
+                        }
+                        return true;
+                    }
+                }
+                registerProcessor('brown-noise-processor', BrownNoiseProcessor);
+
+                class VioletNoiseProcessor extends AudioWorkletProcessor {
+                    constructor() {
+                        super();
+                        this.lastWhite = 0;
+                    }
+                    process(inputs, outputs, parameters) {
+                        const output = outputs[0];
+                        for (let channel = 0; channel < output.length; ++channel) {
+                            const outputChannel = output[channel];
+                            for (let i = 0; i < outputChannel.length; ++i) {
+                                let white = Math.random() * 2 - 1;
+                                outputChannel[i] = white - this.lastWhite;
+                                this.lastWhite = white;
+                            }
+                        }
+                        return true;
+                    }
+                }
+                registerProcessor('violet-noise-processor', VioletNoiseProcessor);
             `;
-            const blob = new Blob([processorCode], { type: 'application/javascript' });
-            const url = URL.createObjectURL(blob);
-            await audioContext.audioWorklet.addModule(url);
+            await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([code], {type: 'application/javascript'})));
             workletLoaded = true;
         }
-        return new AudioWorkletNode(audioContext, 'white-noise-processor');
+        return new AudioWorkletNode(ctx, `${type}-noise-processor`);
     }
 
-    // Function to start the audio playback
     async function startPlaying() {
-        // Stop any existing sound first
         stopPlaying();
-
-        // Create a new AudioContext if it doesn't exist or is closed
-        if (!audioContext || audioContext.state === 'closed') {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
-
-        // Handle the initial user gesture requirement
-        if (audioContext.state === 'suspended') {
-            await audioContext.resume();
-        }
-
-        await createAndPlay();
-    }
-    
-    // Helper function to create the nodes and start the sound
-    async function createAndPlay() {
-        // Create the nodes
-        whiteNoiseNode = await createWhiteNoise(audioContext);
+        audioContext = audioContext && audioContext.state !== 'closed' ? audioContext : new (window.AudioContext || window.webkitAudioContext)();
+        if (audioContext.state === 'suspended') await audioContext.resume();
+        noiseNode = await createNoiseNode(audioContext, noiseType);
         lowPassFilter = audioContext.createBiquadFilter();
         highPassFilter = audioContext.createBiquadFilter();
         gainNode = audioContext.createGain();
-
-        // Set filter types
         lowPassFilter.type = 'lowpass';
         highPassFilter.type = 'highpass';
-
-        // Connect the nodes: white noise -> low-pass filter -> high-pass filter -> gain -> destination
-        whiteNoiseNode.connect(lowPassFilter);
-        lowPassFilter.connect(highPassFilter);
-        highPassFilter.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        // Set initial values from the sliders
-        gainNode.gain.value = volumeSlider.value;
-        lowPassFilter.frequency.value = lowPassSlider.value;
-        highPassFilter.frequency.value = highPassSlider.value;
-
+        noiseNode.connect(lowPassFilter).connect(highPassFilter).connect(gainNode).connect(audioContext.destination);
+        gainNode.gain.value = els.volume.value;
+        lowPassFilter.frequency.value = els.lowPass.value;
+        highPassFilter.frequency.value = els.highPass.value;
         isPlaying = true;
-        playButton.classList.add('playing');
+        els.play.classList.add('playing');
+        els.waveform.style.display = 'block';
+        drawWaveform();
     }
+    
+    // Removed: createAndPlay (logic now in startPlaying)
 
-    // Function to stop the audio playback
     function stopPlaying() {
-        if (whiteNoiseNode) {
-            whiteNoiseNode.stop();
-            whiteNoiseNode.disconnect();
-            whiteNoiseNode = null;
-        }
-        if (lowPassFilter) {
-            lowPassFilter.disconnect();
-            lowPassFilter = null;
-        }
-        if (highPassFilter) {
-            highPassFilter.disconnect();
-            highPassFilter = null;
-        }
-        if (gainNode) {
-            gainNode.disconnect();
-            gainNode = null;
-        }
+        [noiseNode, lowPassFilter, highPassFilter, gainNode].forEach(node => node && node.disconnect());
+        [noiseNode, lowPassFilter, highPassFilter, gainNode] = [null, null, null, null];
         isPlaying = false;
-        playButton.classList.remove('playing');
+        els.play.classList.remove('playing');
+        els.waveform.style.display = 'none';
+        cancelAnimationFrame(animationFrame);
     }
     
-    // Function to apply a preset
-    function applyPreset(lowPassFreq, highPassFreq) {
-        // Set slider values
-        lowPassSlider.value = lowPassFreq;
-        highPassSlider.value = highPassFreq;
-        
-        // Update filters if playing
-        if (lowPassFilter) {
-            lowPassFilter.frequency.value = lowPassFreq;
-        }
-        if (highPassFilter) {
-            highPassFilter.frequency.value = highPassFreq;
-        }
+    function applyPreset(type, lp, hp) {
+        noiseType = type;
+        els.lowPass.value = lp;
+        els.highPass.value = hp;
+        updateUI();
+        if (lowPassFilter) lowPassFilter.frequency.setTargetAtTime(lp, audioContext.currentTime, 0.05);
+        if (highPassFilter) highPassFilter.frequency.setTargetAtTime(hp, audioContext.currentTime, 0.05);
+        if (isPlaying) { stopPlaying(); startPlaying(); }
+        saveSettings();
     }
 
-    // Event listener for the play/pause button
-    playButton.addEventListener('click', () => {
-        if (isPlaying) {
-            stopPlaying();
-        } else {
-            startPlaying();
-        }
+    els.play.addEventListener('click', () => isPlaying ? stopPlaying() : startPlaying());
+
+    [els.lowPass, els.highPass].forEach(slider => slider.addEventListener('input', () => {
+        updateUI();
+        if (lowPassFilter) lowPassFilter.frequency.setTargetAtTime(els.lowPass.value, audioContext.currentTime, 0.05);
+        if (highPassFilter) highPassFilter.frequency.setTargetAtTime(els.highPass.value, audioContext.currentTime, 0.05);
+        saveSettings();
+    }));
+
+    els.volume.addEventListener('input', () => {
+        updateUI();
+        if (gainNode) gainNode.gain.setTargetAtTime(els.volume.value, audioContext.currentTime, 0.05);
+        saveSettings();
     });
 
-    // Event listeners for the filter sliders
-    lowPassSlider.addEventListener('input', () => {
-        if (lowPassFilter) {
-            lowPassFilter.frequency.value = lowPassSlider.value;
-        }
+    els.presets.forEach(p => p.btn.addEventListener('click', () => applyPreset(p.type, p.lp, p.hp)));
+    els.reset.addEventListener('click', () => applyPreset('white', 20000, 0));
+    els.theme.addEventListener('click', () => {
+        const isLight = document.body.classList.toggle('light-mode');
+        els.theme.textContent = isLight ? '☀️' : '🌙';
+        saveSettings();
     });
+    if (document.body.classList.contains('light-mode')) {
+        els.theme.textContent = '☀️';
+    } else {
+        els.theme.textContent = '🌙';
+    }
 
-    highPassSlider.addEventListener('input', () => {
-        if (highPassFilter) {
-            highPassFilter.frequency.value = highPassSlider.value;
+    document.querySelectorAll('button, input[type="range"]').forEach(el => el.setAttribute('tabindex', '0'));
+
+    function updateUI() {
+        els.lowPassValue.textContent = `${els.lowPass.value} Hz`;
+        els.highPassValue.textContent = `${els.highPass.value} Hz`;
+        els.volumeValue.textContent = Number(els.volume.value).toFixed(2);
+        [els.lowPass, els.highPass, els.volume].forEach(slider => slider.setAttribute('aria-valuenow', slider.value));
+        let matched = false;
+        els.presets.forEach(p => {
+            if (noiseType === p.type && Number(els.lowPass.value) === p.lp && Number(els.highPass.value) === p.hp) {
+                p.btn.classList.add('active'); matched = true;
+            } else p.btn.classList.remove('active');
+        });
+        els.reset.classList.toggle('active', !matched);
+    }
+
+    function saveSettings() {
+        localStorage.setItem('noiseSettings', JSON.stringify({
+            noiseType,
+            lowPass: els.lowPass.value,
+            highPass: els.highPass.value,
+            volume: els.volume.value,
+            theme: document.body.classList.contains('light-mode') ? 'light' : 'dark'
+        }));
+    }
+    function loadSettings() {
+        const s = localStorage.getItem('noiseSettings');
+        if (s) {
+            try {
+                const {noiseType: nt, lowPass, highPass, volume, theme} = JSON.parse(s);
+                noiseType = nt || 'white';
+                els.lowPass.value = lowPass || 20000;
+                els.highPass.value = highPass || 0;
+                els.volume.value = volume || 0.5;
+                if (theme === 'light') document.body.classList.add('light-mode');
+            } catch(e) {}
         }
-    });
+        updateUI();
+    }
 
-    // Event listener for the volume slider
-    volumeSlider.addEventListener('input', () => {
-        if (gainNode) {
-            gainNode.gain.value = volumeSlider.value;
+    function drawWaveform() {
+        const ctx = els.waveform.getContext('2d');
+        ctx.clearRect(0, 0, els.waveform.width, els.waveform.height);
+        ctx.strokeStyle = '#55a8f0';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        let y = els.waveform.height / 2;
+        ctx.moveTo(0, y);
+        for (let i = 0; i < els.waveform.width; i++) {
+            y = els.waveform.height / 2 + Math.sin((Date.now()/100 + i/8) % 360) * (els.waveform.height/3) * (isPlaying ? 1 : 0.2);
+            ctx.lineTo(i, y);
         }
-    });
+        ctx.stroke();
+        animationFrame = requestAnimationFrame(drawWaveform);
+    }
 
-    // Event listeners for the preset buttons
-    whitePresetBtn.addEventListener('click', () => applyPreset(20000, 0));
-    pinkPresetBtn.addEventListener('click', () => applyPreset(1000, 0));
-    brownPresetBtn.addEventListener('click', () => applyPreset(300, 0));
-    violetPresetBtn.addEventListener('click', () => applyPreset(20000, 4000));
-    resetPresetBtn.addEventListener('click', () => applyPreset(20000, 0));
-    
-    // Event listener for the technical details collapsible section
-    detailsHeader.addEventListener('click', () => {
-        detailsContent.classList.toggle('show');
-        detailsHeader.classList.toggle('open');
+    // Initial load
+    loadSettings();
+    window.addEventListener('resize', () => {
+        els.main.style.maxWidth = window.innerWidth < 500 ? '98vw' : '400px';
+    });
+    window.dispatchEvent(new Event('resize'));
+    els.detailsHeader.addEventListener('click', () => {
+        els.detailsContent.classList.toggle('show');
+        els.detailsHeader.classList.toggle('open');
     });
 
 </script>
