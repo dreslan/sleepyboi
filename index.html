@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Noise Generator</title>
+
+    <style>
+        /* General styling for the body */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            box-sizing: border-box; /* Ensures padding doesn't affect overall size */
+        }
+
+        /* Main container for the app */
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            background-color: #2c2c2c;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease-in-out;
+            box-sizing: border-box;
+        }
+
+        /* Title styling */
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        /* Preset buttons container */
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+        
+        /* Preset button styling */
+        .preset-buttons button {
+            background-color: #3a3a3a;
+            color: #ffffff;
+            border: 2px solid #5a5a5a;
+            border-radius: 10px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .preset-buttons button:hover {
+            background-color: #4a4a4a;
+        }
+
+        /* Play/pause button styling */
+        .play-button {
+            background-color: #55a8f0;
+            color: #ffffff;
+            border: none;
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(85, 168, 240, 0.4);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .play-button:hover {
+            background-color: #4a95d6;
+            transform: scale(1.05);
+        }
+
+        .play-button:active {
+            transform: scale(0.98);
+        }
+
+        .play-button svg {
+            width: 50px;
+            height: 50px;
+            fill: currentColor;
+            transition: transform 0.2s ease;
+        }
+
+        /* Specific icon states for play and pause */
+        .play-button.playing .play-icon,
+        .play-button:not(.playing) .pause-icon {
+            display: none;
+        }
+
+        .play-button.playing .pause-icon {
+            display: block;
+        }
+
+        .play-button:not(.playing) .play-icon {
+            display: block;
+        }
+
+        /* Slider container styles */
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Tooltip-like behavior on labels */
+        .slider-container label {
+            text-align: left;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .slider-container label[title] {
+            cursor: help;
+        }
+
+        /* Volume control styling */
+        .volume-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .volume-container svg {
+            width: 24px;
+            height: 24px;
+            fill: #aaa;
+            margin-right: 10px;
+        }
+
+        /* Slider track styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #444;
+            border-radius: 5px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* Slider thumb styling */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #55a8f0;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid #1a1a1a;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #55a8f0;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid #1a1a1a;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Technical details section styling */
+        .technical-details {
+            width: 100%;
+            margin-top: 1.5rem;
+            background-color: #3a3a3a;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: left;
+            transition: all 0.3s ease;
+        }
+        
+        .technical-details-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .technical-details-header h2 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .technical-details-header .toggle-icon {
+            font-size: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .technical-details-header.open .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .technical-details-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+            padding-top: 0;
+        }
+
+        .technical-details-content.show {
+            max-height: 500px; /* A large enough value to accommodate the content */
+            padding-top: 15px;
+        }
+
+        .technical-details-content p {
+            margin: 0 0 10px 0;
+            line-height: 1.5;
+            color: #c0c0c0;
+            font-size: 0.9rem;
+        }
+        
+        .technical-details-content strong {
+            color: #ffffff;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Custom Noise</h1>
+
+    <!-- Preset buttons -->
+    <div class="preset-buttons">
+        <button id="white-preset">White</button>
+        <button id="pink-preset">Pink</button>
+        <button id="brown-preset">Brown</button>
+        <button id="violet-preset">Violet</button>
+        <button id="reset-preset">Reset</button>
+    </div>
+    
+    <!-- Play/Pause button with SVG icons -->
+    <button id="play-button" class="play-button">
+        <!-- Play icon -->
+        <svg class="play-icon" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z"/>
+        </svg>
+        <!-- Pause icon -->
+        <svg class="pause-icon" viewBox="0 0 24 24">
+            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+        </svg>
+    </button>
+    
+    <!-- Low-Pass Filter Slider -->
+    <div class="slider-container">
+        <!-- Title attribute provides the tooltip -->
+        <label for="low-pass-slider" title="A low-pass filter blocks high frequencies. Moving the slider down cuts more hiss, making the sound feel deeper.">High Frequencies (Hiss)</label>
+        <input type="range" id="low-pass-slider" min="100" max="20000" step="1" value="20000">
+    </div>
+
+    <!-- High-Pass Filter Slider -->
+    <div class="slider-container">
+        <!-- Title attribute provides the tooltip -->
+        <label for="high-pass-slider" title="A high-pass filter blocks low frequencies. Moving the slider up cuts more rumble, making the sound feel sharper.">Low Frequencies (Rumble)</label>
+        <input type="range" id="high-pass-slider" min="0" max="5000" step="1" value="0">
+    </div>
+
+    <!-- Volume slider -->
+    <div class="volume-container">
+        <svg viewBox="0 0 24 24">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.81 5 3.54 5 6.71s-2.11 5.9-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5">
+    </div>
+    
+    <!-- Technical details section -->
+    <div class="technical-details">
+        <div class="technical-details-header" id="details-header">
+            <h2>Technical Details</h2>
+            <span class="toggle-icon">&#9660;</span> <!-- Unicode for a downward-pointing triangle -->
+        </div>
+        <div class="technical-details-content" id="details-content">
+            <p>This generator creates <strong>white noise</strong> by generating random audio samples. This sound contains all audible frequencies at equal intensity.</p>
+            <p>The <strong>High Frequencies (Hiss)</strong> slider is a <strong>Low-Pass Filter</strong>. It blocks frequencies <em>above</em> the selected value. To get brown noise, this filter is set to a low value (300 Hz).</p>
+            <p>The <strong>Low Frequencies (Rumble)</strong> slider is a <strong>High-Pass Filter</strong>. It blocks frequencies <em>below</em> the selected value. To get violet noise, this filter is set to a high value (4000 Hz).</p>
+            <p>Adjusting both filters lets you create a wide spectrum of "colored" noise, from a deep rumble to a sharp hiss, or a perfect blend of both.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Get HTML elements
+    const playButton = document.getElementById('play-button');
+    const volumeSlider = document.getElementById('volume-slider');
+    const lowPassSlider = document.getElementById('low-pass-slider');
+    const highPassSlider = document.getElementById('high-pass-slider');
+    const whitePresetBtn = document.getElementById('white-preset');
+    const pinkPresetBtn = document.getElementById('pink-preset');
+    const brownPresetBtn = document.getElementById('brown-preset');
+    const violetPresetBtn = document.getElementById('violet-preset');
+    const resetPresetBtn = document.getElementById('reset-preset');
+
+    const detailsHeader = document.getElementById('details-header');
+    const detailsContent = document.getElementById('details-content');
+
+    // Audio context and nodes
+    let audioContext;
+    let whiteNoiseNode;
+    let lowPassFilter;
+    let highPassFilter;
+    let gainNode;
+    let isPlaying = false;
+
+    // This function creates the white noise generator
+    function createWhiteNoise(audioContext) {
+        // Create a buffer for the white noise
+        const bufferSize = audioContext.sampleRate * 2; // 2 seconds of noise
+        const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+
+        // Fill the buffer with random values between -1 and 1
+        for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+        }
+
+        // Create a BufferSourceNode to play the buffer
+        const whiteNoiseSource = audioContext.createBufferSource();
+        whiteNoiseSource.buffer = noiseBuffer;
+        whiteNoiseSource.loop = true; // Loop the noise
+        return whiteNoiseSource;
+    }
+
+    // Function to start the audio playback
+    function startPlaying() {
+        // Stop any existing sound first
+        stopPlaying();
+
+        // Create a new AudioContext if it doesn't exist or is suspended
+        if (!audioContext || audioContext.state === 'closed') {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        // Handle the initial user gesture requirement
+        if (audioContext.state === 'suspended') {
+            audioContext.resume().then(() => {
+                console.log('AudioContext resumed!');
+                createAndPlay();
+            });
+        } else {
+            createAndPlay();
+        }
+    }
+    
+    // Helper function to create the nodes and start the sound
+    function createAndPlay() {
+        // Create the nodes
+        whiteNoiseNode = createWhiteNoise(audioContext);
+        lowPassFilter = audioContext.createBiquadFilter();
+        highPassFilter = audioContext.createBiquadFilter();
+        gainNode = audioContext.createGain();
+
+        // Set filter types
+        lowPassFilter.type = 'lowpass';
+        highPassFilter.type = 'highpass';
+
+        // Connect the nodes: white noise -> low-pass filter -> high-pass filter -> gain -> destination
+        whiteNoiseNode.connect(lowPassFilter);
+        lowPassFilter.connect(highPassFilter);
+        highPassFilter.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        // Set initial values from the sliders
+        gainNode.gain.value = volumeSlider.value;
+        lowPassFilter.frequency.value = lowPassSlider.value;
+        highPassFilter.frequency.value = highPassSlider.value;
+        
+        // Start the noise source
+        whiteNoiseNode.start();
+        
+        isPlaying = true;
+        playButton.classList.add('playing');
+    }
+
+    // Function to stop the audio playback
+    function stopPlaying() {
+        if (whiteNoiseNode) {
+            whiteNoiseNode.stop();
+            whiteNoiseNode.disconnect();
+            whiteNoiseNode = null;
+        }
+        if (lowPassFilter) {
+            lowPassFilter.disconnect();
+            lowPassFilter = null;
+        }
+        if (highPassFilter) {
+            highPassFilter.disconnect();
+            highPassFilter = null;
+        }
+        if (gainNode) {
+            gainNode.disconnect();
+            gainNode = null;
+        }
+        isPlaying = false;
+        playButton.classList.remove('playing');
+    }
+    
+    // Function to apply a preset
+    function applyPreset(lowPassFreq, highPassFreq) {
+        // Set slider values
+        lowPassSlider.value = lowPassFreq;
+        highPassSlider.value = highPassFreq;
+        
+        // Update filters if playing
+        if (lowPassFilter) {
+            lowPassFilter.frequency.value = lowPassFreq;
+        }
+        if (highPassFilter) {
+            highPassFilter.frequency.value = highPassFreq;
+        }
+    }
+
+    // Event listener for the play/pause button
+    playButton.addEventListener('click', () => {
+        if (isPlaying) {
+            stopPlaying();
+        } else {
+            startPlaying();
+        }
+    });
+
+    // Event listeners for the filter sliders
+    lowPassSlider.addEventListener('input', () => {
+        if (lowPassFilter) {
+            lowPassFilter.frequency.value = lowPassSlider.value;
+        }
+    });
+
+    highPassSlider.addEventListener('input', () => {
+        if (highPassFilter) {
+            highPassFilter.frequency.value = highPassSlider.value;
+        }
+    });
+
+    // Event listener for the volume slider
+    volumeSlider.addEventListener('input', () => {
+        if (gainNode) {
+            gainNode.gain.value = volumeSlider.value;
+        }
+    });
+
+    // Event listeners for the preset buttons
+    whitePresetBtn.addEventListener('click', () => applyPreset(20000, 0));
+    pinkPresetBtn.addEventListener('click', () => applyPreset(1000, 0));
+    brownPresetBtn.addEventListener('click', () => applyPreset(300, 0));
+    violetPresetBtn.addEventListener('click', () => applyPreset(20000, 4000));
+    resetPresetBtn.addEventListener('click', () => applyPreset(20000, 0));
+    
+    // Event listener for the technical details collapsible section
+    detailsHeader.addEventListener('click', () => {
+        detailsContent.classList.toggle('show');
+        detailsHeader.classList.toggle('open');
+    });
+
+</script>
+</body>
+</html>
